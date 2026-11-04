@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Bulk QR Code Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #f3f4f6;
+            --card-bg: #ffffff;
+            --primary-green: #059669;
+            --light-green-bg: #ecfdf5;
+            --light-green-border: #a7f3d0;
+            --text-main: #111827;
+            --text-muted: #4b5563;
+            --border-color: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            padding: 30px;
+            border-radius: 16px;
+            background-color: var(--card-bg);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 6px;
+            color: var(--text-main);
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        input[type="text"], select {
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background-color: #fff;
+            color: var(--text-main);
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+        }
+
+        .file-drop-area {
+            border: 2px dashed var(--light-green-border);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            background-color: var(--light-green-bg);
+        }
+
+        .file-drop-area:hover {
+            border-color: var(--primary-green);
+            background-color: #d1fae5;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        #notification {
+            display: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .notification-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .notification-success {
+            background-color: var(--light-green-bg);
+            color: #065f46;
+            border: 1px solid var(--light-green-border);
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-green);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #047857;
+        }
+
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+
+        #loading-indicator {
+            display: none;
+            text-align: center;
+            margin: 15px 0;
+            font-weight: 600;
+            color: var(--primary-green);
+            font-size: 0.9rem;
+        }
+
+        #qrcode-container-wrapper {
+            margin-top: 25px;
+            max-height: 400px;
+            overflow-y: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        #qrcode-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 16px;
+        }
+
+        .qr-code-entry {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .qr-code-entry div:nth-child(2) {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            text-align: center;
+            word-break: break-all;
+            color: var(--text-muted);
+            max-width: 100%;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Trial QR Code Generator</h1>
+        <div class="subtitle">High-performance Single and Bulk (Limited) QR generator</div>
+        <div class="subtitle"><b>Created by: sogiN1984</b></div>
+        
+        <div id="notification"></div>
+
+        <div class="input-group">
+            <label for="inputText">Enter Text or URL</label>
+            <input type="text" id="inputText" placeholder="Type something and press Enter...">
+        </div>
+
+        <div class="input-group">
+            <label>Upload Excel / CSV File (Supports 50,000+ rows)</label>
+            <div class="file-drop-area" onclick="document.getElementById('uploadFile').click();">
+                <span class="file-label" id="fileLabel">Click here to select an Excel or CSV file</span>
+                <input type="file" id="uploadFile" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+            </div>
+        </div>
+
+        <div class="input-group" id="columnSelectorGroup" style="display: none;">
+            <label for="columnSelect">Select Column for QR Codes</label>
+            <select id="columnSelect" onchange="validateSelectedColumn()">
+            </select>
+        </div>
+
+        <div id="loading-indicator">Processing dataset... Please wait.</div>
+
+        <div class="btn-container">
+            <button class="btn-primary" onclick="generateQRCode()">Generate QR Codes</button>
+            <button class="btn-secondary" onclick="clearAll()">Clear All</button>
+        </div>
+
+        <div id="qrcode-container-wrapper">
+            <div id="qrcode-container"></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-primary" onclick="downloadAllQRCodesZip()" id="downloadButton" style="display: none;">Download All as ZIP (<span id="totalCount">0</span>)</button>
+            <button class="btn-secondary" onclick="openNewTabWithQR()" id="openNewTabButton" style="display: none;">Preview in New Tab</button>
+        </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
+
+    <script>
+        let parsedWorkbookRows = [];
+        let activeDataList = [];
+
+        function showNotification(message, type = 'error') {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.className = type === 'error' ? 'notification-error' : 'notification-success';
+            notif.style.display = 'block';
+        }
+
+        function hideNotification() {
+            const notif = document.getElementById('notification');
+            notif.style.display = 'none';
+        }
+
+        // 101% Bulletproof Parser: Directly decodes all worksheet cells, bypassing sheet_to_json truncation limits
+        document.getElementById('uploadFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const fileLabel = document.getElementById('fileLabel');
+            const columnGroup = document.getElementById('columnSelectorGroup');
+            const columnSelect = document.getElementById('columnSelect');
+
+            if (!file) return;
+
+            fileLabel.textContent = `Selected: ${file.name}`;
+            fileLabel.style.color = '#059669';
+            fileLabel.style.fontWeight = '600';
+            hideNotification();
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', sheetRows: 0 });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+
+                    // 1. Find absolute max row and column by scanning all cell keys
+                    let maxRow = 0;
+                    let maxCol = 0;
+                    Object.keys(worksheet).forEach(key => {
+                        if (key.startsWith('!')) return;
+                        const coord = XLSX.utils.decode_cell(key);
+                        if (coord) {
+                            if (coord.r > maxRow) maxRow = coord.r;
+                            if (coord.c > maxCol) maxCol = coord.c;
+                        }
+                    });
+
+                    // 2. Build 2D array row by row up to maxRow
+                    parsedWorkbookRows = [];
+                    for (let r = 0; r <= maxRow; r++) {
+                        const rowData = [];
+                        for (let c = 0; c <= maxCol; c++) {
+                            const cellAddress = XLSX.utils.encode_cell({ r: r, c: c });
+                            const cell = worksheet[cellAddress];
+                            rowData.push(cell && cell.v !== undefined ? String(cell.v) : "");
+                        }
+                        parsedWorkbookRows.push(rowData);
+                    }
+
+                    if (parsedWorkbookRows.length > 0) {
+                        const sheetHeaders = parsedWorkbookRows[0];
+                        columnSelect.innerHTML = '';
+
+                        sheetHeaders.forEach((header, index) => {
+                            const headerName = (header !== undefined && header !== null && String(header).trim() !== '') ? header : `Column ${index + 1}`;
+                            const option = document.createElement('option');
+                            option.value = index;
+                            option.textContent = `Column ${index + 1}: ${headerName}`;
+                            columnSelect.appendChild(option);
+                        });
+
+                        columnGroup.style.display = 'flex';
+                        validateSelectedColumn();
+                    }
+                } catch (error) {
+                    console.error("Error reading file:", error);
+                    showNotification("Failed to parse file. Please verify it is a valid Excel or CSV file.", "error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function validateSelectedColumn() {
+            if (parsedWorkbookRows.length === 0) return;
+            const colIndex = parseInt(document.getElementById('columnSelect').value, 10);
+            let validRowsCount = 0;
+
+            for (let i = 1; i < parsedWorkbookRows.length; i++) {
+                const val = parsedWorkbookRows[i][colIndex];
+                if (val !== undefined && val !== null && String(val).trim() !== '') {
+                    validRowsCount++;
+                }
+            }
+
+            if (validRowsCount === 0) {
+                showNotification("⚠️ The selected column contains no row values! Please choose a different column from the dropdown.", "error");
+            } else {
+                showNotification(`✅ Column selected successfully. Found ${validRowsCount.toLocaleString()} valid items ready for generation.`, "success");
+            }
+        }
+
+        function generateQRCode() {
+            hideNotification();
+            const inputText = document.getElementById('inputText').value.trim();
+            const qrcodeContainer = document.getElementById('qrcode-container');
+            const columnSelect = document.getElementById('columnSelect');
+            const loadingIndicator = document.getElementById('loading-indicator');
+
+            qrcodeContainer.innerHTML = '';
+            activeDataList = [];
+
+            if (parsedWorkbookRows.length > 1) {
+                const selectedColumnIndex = parseInt(columnSelect.value, 10);
+                for (let i = 1; i < parsedWorkbookRows.length; i++) {
+                    const rowValue = parsedWorkbookRows[i][selectedColumnIndex];
+                    if (rowValue !== undefined && rowValue !== null && String(rowValue).trim() !== '') {
+                        activeDataList.push(String(rowValue).trim());
+                    }
+                }
+            }
+
+            if (inputText !== '') {
+                activeDataList.push(inputText);
+            }
+
+            if (activeDataList.length === 0) {
+                showNotification("No data found to generate QR codes. Enter text or select a valid column with values.", "error");
+                toggleButtons();
+                return;
+            }
+
+            loadingIndicator.style.display = 'block';
+            
+            setTimeout(() => {
+                const displayLimit = Math.min(activeDataList.length, 100);
+                for (let i = 0; i < displayLimit; i++) {
+                    createQRCodeEntry(activeDataList[i]);
+                }
+
+                loadingIndicator.style.display = 'none';
+                if (activeDataList.length > 100) {
+                    showNotification(`⚡ Displaying first 100 previews out of ${activeDataList.length.toLocaleString()} total items. All items are included in the ZIP download!`, "success");
+                }
+                toggleButtons();
+            }, 50);
+        }
+
+        function createQRCodeEntry(inputData) {
+            const qrcodeContainer = document.getElementById('qrcode-container');
+            const qrCodeEntry = document.createElement('div');
+            qrCodeEntry.className = 'qr-code-entry';
+
+            const qrcodeDiv = document.createElement('div');
+            new QRCode(qrcodeDiv, {
+                text: inputData,
+                width: 110,
+                height: 110,
+            });
+            qrCodeEntry.appendChild(qrcodeDiv);
+
+            const outputTextDiv = document.createElement('div');
+            outputTextDiv.textContent = inputData;
+            qrCodeEntry.appendChild(outputTextDiv);
+
+            qrcodeContainer.appendChild(qrCodeEntry);
+        }
+
+        function toggleButtons() {
+            const hasItems = activeDataList.length > 0;
+            document.getElementById('downloadButton').style.display = hasItems ? 'block' : 'none';
+            document.getElementById('openNewTabButton').style.display = hasItems ? 'block' : 'none';
+            document.getElementById('totalCount').textContent = activeDataList.length.toLocaleString();
+        }
+
+        function openNewTabWithQR() {
+            if (activeDataList.length === 0) return;
+            const displayList = activeDataList.slice(0, 200);
+
+            const tabContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Generated QR Codes Preview</title>
+                    <style>
+                        body { font-family: sans-serif; padding: 20px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; background: #f3f4f6; }
+                        .qr-card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; background: white; display: flex; flex-direction: column; align-items: center; }
+                    </style>
+                </head>
+                <body>
+                    <div style="width:100%; text-align:center; font-weight:bold; margin-bottom:20px;">Showing preview of generated QR codes</div>
+                    <div id="grid" style="display:flex; flex-wrap:wrap; gap:15px; justify-content:center;"></div>
+                    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"><\/script>
+                    <script>
+                        const data = ${JSON.stringify(displayList)};
+                        const grid = document.getElementById('grid');
+                        data.forEach(text => {
+                            const card = document.createElement('div');
+                            card.className = 'qr-card';
+                            const qrDiv = document.createElement('div');
+                            new QRCode(qrDiv, { text: text, width: 110, height: 110 });
+                            const label = document.createElement('div');
+                            label.style.marginTop = '8px';
+                            label.style.fontSize = '12px';
+                            label.textContent = text;
+                            card.appendChild(qrDiv);
+                            card.appendChild(label);
+                            grid.appendChild(card);
+                        });
+                    <\/script>
+                </body>
+                </html>
+            `;
+            const newTab = window.open();
+            newTab.document.write(tabContent);
+            newTab.document.close();
+        }
+
+        async function downloadAllQRCodesZip() {
+            if (activeDataList.length === 0) return;
+
+            const loadingIndicator = document.getElementById('loading-indicator');
+            loadingIndicator.style.display = 'block';
+            loadingIndicator.textContent = `Packaging ${activeDataList.length.toLocaleString()} QR codes into ZIP... Please wait.`;
+
+            const zip = new JSZip();
+            const container = document.createElement('div');
+
+            try {
+                for (let i = 0; i < activeDataList.length; i++) {
+                    const text = activeDataList[i];
+                    container.innerHTML = '';
+                    const qrDiv = document.createElement('div');
+                    container.appendChild(qrDiv);
+                    
+                    new QRCode(qrDiv, {
+                        text: text,
+                        width: 128,
+                        height: 128
+                    });
+
+                    const canvas = qrDiv.querySelector('canvas');
+                    if (canvas) {
+                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                        const safeFilename = text.replace(/[^a-z0-9]/gi, '_').substring(0, 50) || `qr_${i}`;
+                        zip.file(`${safeFilename}_${i+1}.png`, blob);
+                    }
+                }
+
+                const content = await zip.generateAsync({ type: 'blob' });
+                saveAs(content, 'bulk_qrcodes.zip');
+                loadingIndicator.style.display = 'none';
+                showNotification("🎉 Successfully generated and downloaded all QR codes in ZIP format!", "success");
+            } catch (err) {
+                console.error(err);
+                loadingIndicator.style.display = 'none';
+                showNotification("An error occurred while generating the ZIP file.", "error");
+            }
+        }
+
+        function clearAll() {
+            parsedWorkbookRows = [];
+            activeDataList = [];
+            document.getElementById('qrcode-container').innerHTML = '';
+            document.getElementById('inputText').value = '';
+            document.getElementById('uploadFile').value = '';
+            document.getElementById('fileLabel').textContent = 'Click here to select an Excel or CSV file';
+            document.getElementById('fileLabel').style.color = '#4b5563';
+            document.getElementById('fileLabel').style.fontWeight = 'normal';
+            document.getElementById('columnSelectorGroup').style.display = 'none';
+            document.getElementById('loading-indicator').style.display = 'none';
+            hideNotification();
+            toggleButtons();
+            document.getElementById('inputText').focus();
+        }
+
+        document.getElementById('inputText').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                generateQRCode();
+            }
+        });
+    </script>
+</body>
+</html>
